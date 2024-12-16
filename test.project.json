@@ -1,0 +1,30 @@
+{
+  "name": "BufNet-test",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$path": "test/shared",
+
+      "BufNet": {
+        "$path": "src"
+      },
+
+      "Client": {
+        "$path": "test/client",
+        "$properties": {
+          "RunContext": {
+            "Enum": 2
+          }
+        }
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "test/server"
+      }
+    }
+    
+  }
+}
