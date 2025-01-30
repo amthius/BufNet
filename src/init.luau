@@ -5,7 +5,6 @@ local Client = require(script.Runtime.Client)
 local Server = require(script.Runtime.Server)
 local Types = require(script.Types)
 
-
 local DataTypes = {
     bool = require(script.DataTypes.bool),
     f32 = require(script.DataTypes.f32),
@@ -37,5 +36,5 @@ end
 
 return ({
     Types = DataTypes,
-    Packet = Packet 
+    Packet = Packet
 } :: any) :: Types.BufNet

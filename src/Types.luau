@@ -20,11 +20,14 @@ export type StructEvent<T> = {
     Fire: (sent: T, player: Player?) -> (),
     FireAll: (sent: T) -> (),
     FireList: (sent: T, players: {Player}) -> (),
+    _TYPE: T
 }
 
 export type StructFunct<S, R> = {
     Invoke: (sent: S) -> R,
     Callback: (callback: (sent: S) -> R) -> (),
+    _SENT: S,
+    _RECEIVED: R,
 }
 
 export type DataTypes = {
@@ -55,7 +58,7 @@ export type BufNet = {
     Packet: {
         event: <T> (data: EventProps<T>) -> StructEvent<T>,
         funct: <S, R> (data: FunctProps<S, R>) -> StructFunct<S, R>
-    }
+    },
 }
 
 return nil
