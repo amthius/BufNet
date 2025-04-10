@@ -78,7 +78,7 @@ function Packet.funct(data: Types.FunctProps<any, any>)
             return coroutine.yield()
         end,
 
-        Callback = function(callback: (sent: any) -> any) 
+        Callback = function(callback: (sent: any) -> any, player: Player?) 
             assert(RunContext == "Server", "Call only works on server")
             Stored[Id].connections.callback = callback
         end,

@@ -25,7 +25,7 @@ export type StructEvent<T> = {
 
 export type StructFunct<S, R> = {
     Invoke: (sent: S) -> R,
-    Callback: (callback: (sent: S) -> R) -> (),
+    Callback: (callback: (sent: S, player: Player?) -> R) -> (),
     _SENT: S,
     _RECEIVED: R,
 }
