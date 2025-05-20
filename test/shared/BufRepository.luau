@@ -22,5 +22,9 @@ return {
     SomeFunction = BufNet.Packet.funct({
         data = Types.bool(),
         received = Types.string()
-    }) 
+    }),
+
+    NothingEvent = BufNet.Packet.event({
+        data = Types.none()
+    }),
 }

@@ -14,7 +14,6 @@ return function(buf: buffer, player: Player?)
 
     while cursor.value < len do
         local id = u8.read(buf, cursor)
-
         local packet = PacketData[id]
         local data
         local send

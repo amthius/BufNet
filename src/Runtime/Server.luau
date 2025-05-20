@@ -10,8 +10,35 @@ local ReferenceTables = require(script.Parent.Parent.Stored.ReferenceTables)
 local Server = {}
 local Sent = {}
 
+local active_ids = {}
+local caller_frequency = {}
+
 local function OnServerEvent(player: Player, buf: buffer?, instances: {[number]: Instance}?) 
     if typeof(buf) ~= "buffer" then return end
+
+    if not caller_frequency[player] then
+        caller_frequency[player] = 1
+    else
+        caller_frequency[player] += 1
+    end
+
+    if caller_frequency[player] and caller_frequency[player] > 10 then
+        player:Kick("[BUFNET: FLOOD CHECK] Do not spam packets")
+    end
+
+    local id = buffer.readu8(buf, 0)
+    local length = buffer.len(buf)
+    
+    if length > 40000 then
+        warn(`[{player} :: {player.UserId}] is sending too big of a packet!`)
+        return 
+    end
+
+    if active_ids[id] then 
+        return 
+    end
+
+    active_ids[id] = true
 
     if instances then
         assert(#instances <= 256, "Instance limit exceeded (256)")
@@ -49,7 +76,6 @@ function Server.Start()
     Remote.OnServerEvent:Connect(OnServerEvent)
 
     RunService.Heartbeat:Connect(function()
-
         for _, player in Players:GetPlayers() do
             local data = Sent[player]
 
@@ -62,6 +88,8 @@ function Server.Start()
         end
 
         table.clear(Sent)
+        table.clear(active_ids)
+        table.clear(caller_frequency)
     end)
 end
 

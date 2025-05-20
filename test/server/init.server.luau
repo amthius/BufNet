@@ -8,7 +8,25 @@ BufRepository.SomeEvent.Connect(function(data, player)
     print(data, player)
 end)
 
-BufRepository.SomeFunction.Callback(function(data)
+-- basic cooldown example to handle spam
+local cooldown = {}
+BufRepository.NothingEvent.Connect(function(_, player)
+    if not cooldown[player] then
+        cooldown[player] = true
+
+        task.delay(1, function()
+            cooldown[player] = nil
+        end)
+    else
+        return
+    end
+
+    print(`{player} is calling event`)
+end)
+
+BufRepository.SomeFunction.Callback(function(data, player)
+    warn(player, "called SomeFunction")
+
     if data then
         return "The result is true!"
     else

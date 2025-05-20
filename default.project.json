@@ -1,6 +1,13 @@
 {
-  "name": "BufNet",
+  "name": "Bufnet-test",
   "tree": {
-    "$path": "src"
-  } 
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$path": "src/shared",
+      "Bufnet": {
+        "$path": "src"
+      }
+    }
+  }
 }

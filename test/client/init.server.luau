@@ -21,10 +21,23 @@ BufRepository.SomeEvent.Fire({
     Something = Color3.fromRGB(255, 0, 0)
 })
 
-
 BufRepository.SomeEvent.Connect(function(data)
     print(data)
 end)
 
 local result = BufRepository.SomeFunction.Invoke(true)
 print(result)
+
+-- Hit packet limit.
+for i = 1, 40001 do
+    BufRepository.NothingEvent.Fire()
+end
+
+task.wait(2)
+
+-- Extreme Spam
+game:GetService("RunService").Heartbeat:Connect(function()
+    for i = 1, 100 do
+        BufRepository.NothingEvent.Fire()
+    end
+end)
