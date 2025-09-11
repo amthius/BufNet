@@ -1,26 +1,62 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
-local u8 = require(ReplicatedStorage.BufNet.DataTypes.u8)()
-local Types = require(ReplicatedStorage.BufNet.Types)
+local u8 = require(script.Parent.Parent.DataTypes.u8)()
+local Types = require(script.Parent.Parent.Types)
 
-local cursor = {value = 0}
+local RunContext = if RunService:IsServer() then "Server" else "Client"
+local cursor = { value = 0 }
+local returned = table.create(256)
 
-return function (channel: Types.Channel, buf: buffer, player: Player?)
-    cursor.value = 0
-    local len = buffer.len(buf)
+return function(channel: Types.Channel, buf: buffer, player: Player?)
+	table.clear(returned)
 
-    while cursor.value < len do
-        local id = u8.read(buf, cursor)
+	cursor.value = 0
+	local len = buffer.len(buf)
+    local pamount = 0 
 
-        local packet = channel.packets[id]
-        local internal = packet._internal
+	while cursor.value < len do
+        pamount += 1
 
-        local outgoing = internal.outgoing
-        local callback = internal.callback
-        
-        local read = outgoing.read(buf, cursor)
-        callback(read, player)
+        if pamount > channel.max_packet_process then
+            break
+        end
 
-    end
+		local id = u8.read(buf, cursor)
 
+		local packet = channel.packets[id]
+		local identity = packet.Identifier
+
+		if identity == "Funct" then
+			local internal = packet._internal
+
+			local outgoing = internal.outgoing
+			local incoming = internal.incoming
+			local callback = internal.callback
+
+            local read
+            if RunContext == "Server" then
+                read = outgoing.read(buf, cursor)
+                table.insert(returned, {id = id, outgoing = incoming, sent = callback(read, player)})
+            elseif RunContext == "Client" then
+                read = incoming.read(buf, cursor)
+                table.insert(returned, {id = id, outgoing = incoming, sent = read})
+
+                local invokes = packet._internal.invokes
+
+                task.spawn(invokes[1], read)
+                table.remove(invokes, 1)
+            end
+
+        elseif identity == "Event" then
+            local internal = packet._internal
+			local outgoing = internal.outgoing
+            local callback = internal.callback
+
+            if callback then
+                callback(outgoing.read(buf, cursor), player)
+            end
+		end
+	end
+
+	return if #returned == 0 then nil else returned
 end

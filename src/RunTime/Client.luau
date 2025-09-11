@@ -1,11 +1,11 @@
 local Player = game:GetService("Players").LocalPlayer
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Constructor = require(ReplicatedStorage.BufNet.Process.Constructor)
-local Dispatcher = require(ReplicatedStorage.BufNet.Process.Dispatcher)
-local Types = require(ReplicatedStorage.BufNet.Types)
+local Constructor = require(script.Parent.Parent.Process.Constructor)
+local Dispatcher = require(script.Parent.Parent.Process.Dispatcher)
+local OIBridge = require(script.Parent.Parent.Process.OIBridge)
+
+local Types = require(script.Parent.Parent.Types)
 
 local Client = {}
 local UserGroups = {} :: { [string]: { [Players]: {} } }
@@ -13,26 +13,30 @@ local ActiveChannels = {}
 
 local ChannelContainer = script.Parent:FindFirstChild("Channels")
 
-function Client.build_channel(props: Types.ChannelProps)
+function Client.build_channel(props: Types.ChannelProps, struct: Types.Channel)
 	local name = props.name
 	local inst = ChannelContainer:WaitForChild(name) :: any
-    local channel
 
-    inst.OnClientEvent:Connect(function(buf: buffer)
-        Dispatcher(channel, buf, Player)
+    inst.OnClientEvent:Connect(function(buf: buffer, instances: {[number]: Instance})
+        if buffer.len(buf) >= struct.max_buffer_size then
+            return
+        end
+
+        OIBridge.OI = struct.instances
+
+        struct.instances.incoming = instances
+        Dispatcher(struct, buf, Player)
     end)
 
     local users = {[Player] = {}}
     UserGroups[name] = users
 
-    channel = {
-        instance = inst,
-        users = users,
-        packets = {},
-    }
+    struct.instance = inst
+	struct.users = users
+	struct.type = type :: any
 
-    table.insert(ActiveChannels, channel)
-	return channel 
+    table.insert(ActiveChannels, struct)
+	return struct 
 end
 
 function Client.start()
@@ -45,9 +49,13 @@ function Client.start()
             sent = item.users[Player]
 
             if #sent ~= 0 then
+                OIBridge.OI = item.instances
+
                 local buf = Constructor(sent)
-                item.instance:FireServer(buf)
+                item.instance:FireServer(buf, item.instances.outgoing)
+
                 table.clear(sent)
+                table.clear(item.instances.outgoing)
             end
 
         end

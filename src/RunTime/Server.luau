@@ -1,10 +1,11 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Constructor = require(ReplicatedStorage.BufNet.Process.Constructor)
-local Dispatcher = require(ReplicatedStorage.BufNet.Process.Dispatcher)
-local Types = require(ReplicatedStorage.BufNet.Types)
+local Constructor = require(script.Parent.Parent.Process.Constructor)
+local Dispatcher = require(script.Parent.Parent.Process.Dispatcher)
+local OIBridge = require(script.Parent.Parent.Process.OIBridge)
+
+local Types = require(script.Parent.Parent.Types)
 
 local Server = {}
 local UserGroups = {} :: { [string]: { [Players]: {} } }
@@ -14,7 +15,7 @@ local ChannelContainer = Instance.new("Folder")
 ChannelContainer.Name = "Channels"
 ChannelContainer.Parent = script.Parent
 
-function Server.build_channel(props: Types.ChannelProps)
+function Server.build_channel(props: Types.ChannelProps, struct: Types.Channel)
 	local type = props.type
 	local name = props.name
 	local inst: any
@@ -29,30 +30,46 @@ function Server.build_channel(props: Types.ChannelProps)
 
 	inst.Name = name
 	inst.Parent = ChannelContainer
-	local channel
 
-	inst.OnServerEvent:Connect(function(player: Player, buf: buffer)
+    local users = {}
+
+	inst.OnServerEvent:Connect(function(player: Player, buf: buffer, instances: {[number]: Instance})
 		if typeof(buf) ~= "buffer" then
 			return
 		end
 
-		Dispatcher(channel, buf, player)
+		if buffer.len(buf) >= struct.max_buffer_size then
+            return
+        end
+
+		OIBridge.OI = struct.instances
+
+		if #instances ~= 0 and #instances < 256 then
+			struct.instances.incoming = instances
+		end
+
+		local returned = Dispatcher(struct, buf, player)
+
+        if returned then
+			for i = 1, #returned do
+				table.insert(users[player], returned[i])
+			end
+        end
 	end)
 
-	local users = {}
+	
 	for _, player in Players:GetPlayers() do
 		users[player] = {}
 	end
 
 	UserGroups[name] = users
-	channel = {
-		instance = inst,
-		users = users,
-		packets = {},
-	}
 
-	table.insert(ActiveChannels, channel)
-	return channel
+	struct.instance = inst
+	struct.users = users
+	struct.type = type :: any
+
+	table.insert(ActiveChannels, struct)
+	return struct
 end
 
 function Server.start()
@@ -62,7 +79,7 @@ function Server.start()
 	RunService.Heartbeat:Connect(function()
         local current_players = Players:GetPlayers()
 
-		for p = 1, #Players:GetPlayers() do
+		for p = 1, #current_players do
             local player = current_players[p]
 
 			for i = 1, #ActiveChannels do
@@ -70,9 +87,13 @@ function Server.start()
 				sent = item.users[player]
 
 				if #sent ~= 0 then
+					OIBridge.OI = item.instances
+
 					local buf = Constructor(sent)
-					item.instance:FireClient(player, buf)
+					item.instance:FireClient(player, buf, item.instances.outgoing)
+
 					table.clear(sent)
+					table.clear(item.instances.outgoing)
 				end
 			end
 		end

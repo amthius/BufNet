@@ -10,6 +10,7 @@ local f64 = require(script.DataTypes.f64)
 local i16 = require(script.DataTypes.i16)
 local i32 = require(script.DataTypes.i32)
 local i8 = require(script.DataTypes.i8)
+local instance = require(script.DataTypes.instance)
 local map = require(script.DataTypes.map)
 local none = require(script.DataTypes.none)
 local optional = require(script.DataTypes.optional)
@@ -21,13 +22,11 @@ local u8 = require(script.DataTypes.u8)
 local vec2 = require(script.DataTypes.vec2)
 local vec3 = require(script.DataTypes.vec3)
 local Packet = require(script.Packet)
-local Client = require(script.RunTime.Client)
-local Server = require(script.RunTime.Server)
 
 if RunService:IsServer() then
-    Server.start()
+    require(script.RunTime.Server).start()
 else
-    Client.start()
+    require(script.RunTime.Client).start()
 end
 
 return table.freeze({
@@ -53,6 +52,7 @@ return table.freeze({
         u8 = u8,
         vec2 = vec2,
         vec3 = vec3,
+        instance = instance
     } :: any) :: {
         bool: () -> boolean,
         f32: () -> number,
@@ -73,6 +73,6 @@ return table.freeze({
         vec3: () -> Vector3,
         vec2: () -> Vector2,
         cframe: () -> CFrame,
-        color3: () -> Color3,
+        color3: () -> Color3
     }
 })

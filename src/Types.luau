@@ -6,26 +6,44 @@ export type TypeStruct<T> = {
     write: (buf: buffer, cursor: cursor, value: T) -> (),
 }
 
+type ProtocolType = "Reliable" | "Unreliable"
+
+
+
+export type OIInstances = {
+    outgoing: {[number]: Instance},
+    incoming: {[number]: Instance}
+}
+
 export type ChannelProps = {
-    type: "Reliable" | "Unreliable",
+    type: ProtocolType,
     name: string,
+
+    max_packet_process: number?,
+    max_buffer_size: number?
 }
 
 export type Channel = {
     instance: any,
+    type: ProtocolType,
     users: {[Player]: any},
     packets: {any},
+
+    max_packet_process: number,
+    max_buffer_size: number,
+
+    instances: OIInstances 
 }
 
-export type EventProps<S> = {
+export type EventProps<O> = {
     channel: Channel,
-    outgoing: S
+    outgoing: O
 }
 
-export type FunctProps<S, R> = {
+export type FunctProps<O, I> = {
     channel: Channel,
-    outgoing: S,
-    incoming: R,
+    outgoing: O,
+    incoming: I,
 }
 
 export type StructEvent<S> = {
@@ -37,8 +55,8 @@ export type StructEvent<S> = {
 }
 
 export type StructFunct<S, R> = {
-    Invoke: (sent: S) -> R,
-    Callback: (callback: (sent: S, player: Player?) -> R) -> (),
+    Invoke: (self: StructFunct<S, R>, sent: S) -> R,
+    Callback: (self: StructFunct<S, R>, callback: (sent: S, player: Player?) -> R) -> (),
     _SENT: S,
     _RECEIVED: R,
 }

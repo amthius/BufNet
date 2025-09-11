@@ -1,7 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local u8 = require(ReplicatedStorage.BufNet.DataTypes.u8)()
-local Types = require(ReplicatedStorage.BufNet.Types)
+local u8 = require(script.Parent.Parent.DataTypes.u8)()
+local Types = require(script.Parent.Parent.Types)
 
 type Payload = {
 	[number]: {
