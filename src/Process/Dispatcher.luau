@@ -4,7 +4,7 @@ local u8 = require(script.Parent.Parent.DataTypes.u8)()
 local Types = require(script.Parent.Parent.Types)
 
 local RunContext = if RunService:IsServer() then "Server" else "Client"
-local cursor = { value = 0 }
+local cursor = {value = 0}
 local returned = table.create(256)
 
 return function(channel: Types.Channel, buf: buffer, player: Player?)
@@ -24,6 +24,8 @@ return function(channel: Types.Channel, buf: buffer, player: Player?)
 		local id = u8.read(buf, cursor)
 
 		local packet = channel.packets[id]
+        if not packet then continue end
+
 		local identity = packet.Identifier
 
 		if identity == "Funct" then
@@ -35,6 +37,8 @@ return function(channel: Types.Channel, buf: buffer, player: Player?)
 
             local read
             if RunContext == "Server" then
+                if not callback then continue end
+
                 read = outgoing.read(buf, cursor)
                 table.insert(returned, {id = id, outgoing = incoming, sent = callback(read, player)})
             elseif RunContext == "Client" then
@@ -43,8 +47,11 @@ return function(channel: Types.Channel, buf: buffer, player: Player?)
 
                 local invokes = packet._internal.invokes
 
-                task.spawn(invokes[1], read)
-                table.remove(invokes, 1)
+                if invokes[1] then
+                    task.spawn(invokes[1].thread, read)
+                    table.remove(invokes, 1)
+                end
+                
             end
 
         elseif identity == "Event" then

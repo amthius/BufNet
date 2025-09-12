@@ -6,6 +6,7 @@ local Types = require(script.Parent.Types)
 local RunContext = if RunService:IsServer() then "Server" else "Client"
 
 local Packet = {}
+local InvokeRepositories = if RunContext == "Client" then {} else nil :: any
 
 function Packet.Event<O>(props: Types.EventProps<O>)
     local channel = props.channel
@@ -84,7 +85,8 @@ function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 			local payload = {id = id, outgoing = outgoing, incoming = incoming, sent = sent}
 
 			table.insert(channel.users[Players.LocalPlayer], payload)
-			table.insert(self._internal.invokes, coroutine.running())
+			local thread = coroutine.running()
+			table.insert(self._internal.invokes, {thread = thread, creation = os.clock()})
 
 			return coroutine.yield()
 		end,
@@ -95,8 +97,31 @@ function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 		end,
 	}
 
+	if RunContext == "Client" then
+		table.insert(InvokeRepositories, struct._internal.invokes)
+	end
+	
 	table.insert(channel.packets, struct)
 	return (struct :: any) :: Types.StructFunct<O, I>
+end
+
+if RunContext == "Client" then
+	RunService.Heartbeat:Connect(function()
+		local current = os.clock()
+
+		for i = 1, #InvokeRepositories do
+			local holder = InvokeRepositories[i]
+
+			for j = 1, #holder do
+				local data = holder[i]
+				if data.creation + 10 < current then
+					task.spawn(data.thread, nil)	
+					table.remove(holder, 1)
+				end
+			end
+
+		end
+	end)
 end
 
 return Packet

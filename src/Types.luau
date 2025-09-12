@@ -8,8 +8,6 @@ export type TypeStruct<T> = {
 
 type ProtocolType = "Reliable" | "Unreliable"
 
-
-
 export type OIInstances = {
     outgoing: {[number]: Instance},
     incoming: {[number]: Instance}
