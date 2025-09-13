@@ -10,32 +10,35 @@ type Payload = {
 }
 
 local function size(payload: Payload): number
-    local buf_size = 0
+	local buf_size = 0
+    local data
+	for i = 1, #payload do
+		data = payload[i]
+		buf_size += 1
+		local size_type = data.outgoing.size
 
-    for _, item in payload do
-        buf_size += 1 
-        local size_type = item.outgoing.size
+		if typeof(size_type) == "function" then
+			buf_size += size_type(data.sent)
+		else
+			buf_size += size_type
+		end
+	end
 
-        if typeof(size_type) == "function" then
-            buf_size += size_type(item.sent)
-        else
-            buf_size += size_type
-        end
-    end
-
-    return buf_size  
+	return buf_size
 end
 
 local function write(buf: buffer, cursor: Types.cursor, payload: Payload)
-    for _, item in payload do
-        u8.write(buf, cursor, item.id)
-        item.outgoing.write(buf, cursor, item.sent)
-    end
+    local data
+	for i = 1, #payload, 2 do
+		data = payload[i]
+		u8.write(buf, cursor, data.id)
+		data.outgoing.write(buf, cursor, data.sent)
+	end
 end
 
 return function(payload: Payload): buffer
-    local cursor = {value = 0}
-    local buf = buffer.create(size(payload))
-    write(buf, cursor, payload)
-    return buf
+	local cursor = { value = 0 }
+	local buf = buffer.create(size(payload))
+	write(buf, cursor, payload)
+	return buf
 end

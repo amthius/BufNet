@@ -18,7 +18,8 @@ export type ChannelProps = {
     name: string,
 
     max_packet_process: number?,
-    max_buffer_size: number?
+    max_buffer_size: number?,
+    invoke_lifespan: number?
 }
 
 export type Channel = {
@@ -29,6 +30,7 @@ export type Channel = {
 
     max_packet_process: number,
     max_buffer_size: number,
+    invoke_lifespan: number,
 
     instances: OIInstances 
 }

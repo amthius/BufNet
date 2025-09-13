@@ -15,6 +15,10 @@ function Packet.Event<O>(props: Types.EventProps<O>)
     local id = #channel.packets + 1
 	local outgoing = props.outgoing
 
+	local payload = {}
+	payload.outgoing = outgoing
+	payload.id = id
+
     local struct = {
 		_internal = {
 			callback = nil,
@@ -28,7 +32,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
         end,
 
 		Fire = function(self, sent: any, player: Player?) 
-			local payload = {id = id, outgoing = outgoing, sent = sent}
+			payload.sent = sent
 
 			if RunContext == "Server" then
 				assert(player, "Player not specified.")
@@ -41,7 +45,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
 
 		FireAll = function(self, sent: any)
 			assert(RunContext == "Server", "FireAll can only be called from the server.")
-			local payload = {id = id, outgoing = outgoing, sent = sent}
+			payload.sent = sent
 
 			for _, player in Players:GetPlayers() do
 				table.insert(channel.users[player], payload)
@@ -50,7 +54,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
 
 		FireList = function(self, sent: any, players: {Player})
 			assert(RunContext == "Server", "FireList can only be called from the server.")
-			local payload = {id = id, outgoing = outgoing, sent = sent}
+			payload.sent = sent
 
 			for _, player in players do
 				table.insert(channel.users[player], payload)
@@ -65,10 +69,16 @@ end
 function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 	local channel = props.channel
 	assert(channel, "Channel must be defined for packet.")
+	assert(channel.type ~= "Unreliable", `{channel.instance.Name} is Unreliable. It is not encouraged to use this protocol for Funct packet types due to potential data loss.`)
 
 	local id = #channel.packets + 1
 	local outgoing = props.outgoing
 	local incoming = props.incoming
+
+	local payload = {}
+	payload.outgoing = outgoing
+	payload.incoming = incoming
+	payload.id = id
 
 	local struct = {
 		_internal = {
@@ -82,11 +92,11 @@ function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 
 		Invoke = function(self, sent: any)
 			assert(RunContext == "Client", "Invoke can only be called from the client")
-			local payload = {id = id, outgoing = outgoing, incoming = incoming, sent = sent}
+			payload.sent = sent
 
 			table.insert(channel.users[Players.LocalPlayer], payload)
 			local thread = coroutine.running()
-			table.insert(self._internal.invokes, {thread = thread, creation = os.clock()})
+			table.insert(self._internal.invokes, {thread = thread, creation = os.clock(), lifespan = channel.invoke_lifespan})
 
 			return coroutine.yield()
 		end,
@@ -114,7 +124,7 @@ if RunContext == "Client" then
 
 			for j = 1, #holder do
 				local data = holder[i]
-				if data.creation + 10 < current then
+				if data.creation + data.lifespan < current then
 					task.spawn(data.thread, nil)	
 					table.remove(holder, 1)
 				end

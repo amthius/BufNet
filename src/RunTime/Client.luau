@@ -15,6 +15,7 @@ local ChannelContainer = script.Parent:FindFirstChild("Channels")
 
 function Client.build_channel(props: Types.ChannelProps, struct: Types.Channel)
 	local name = props.name
+    local type = props.type
 	local inst = ChannelContainer:WaitForChild(name) :: any
 
     inst.OnClientEvent:Connect(function(buf: buffer, instances: {[number]: Instance})

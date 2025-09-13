@@ -17,6 +17,7 @@ return function(props: Types.ChannelProps)
 
         max_packet_process = props.max_packet_process or 20,
         max_buffer_size = props.max_buffer_size or 10000,
+        invoke_lifespan = props.invoke_lifespan or 5,
 
 		instances = {
             outgoing = {},
