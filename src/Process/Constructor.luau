@@ -29,7 +29,7 @@ end
 
 local function write(buf: buffer, cursor: Types.cursor, payload: Payload)
     local data
-	for i = 1, #payload, 2 do
+	for i = 1, #payload do
 		data = payload[i]
 		u8.write(buf, cursor, data.id)
 		data.outgoing.write(buf, cursor, data.sent)
@@ -40,5 +40,6 @@ return function(payload: Payload): buffer
 	local cursor = { value = 0 }
 	local buf = buffer.create(size(payload))
 	write(buf, cursor, payload)
+	
 	return buf
 end

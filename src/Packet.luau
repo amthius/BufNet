@@ -15,10 +15,6 @@ function Packet.Event<O>(props: Types.EventProps<O>)
     local id = #channel.packets + 1
 	local outgoing = props.outgoing
 
-	local payload = {}
-	payload.outgoing = outgoing
-	payload.id = id
-
     local struct = {
 		_internal = {
 			callback = nil,
@@ -32,7 +28,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
         end,
 
 		Fire = function(self, sent: any, player: Player?) 
-			payload.sent = sent
+			local payload = {outgoing = outgoing, id = id, sent = sent}
 
 			if RunContext == "Server" then
 				assert(player, "Player not specified.")
@@ -45,7 +41,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
 
 		FireAll = function(self, sent: any)
 			assert(RunContext == "Server", "FireAll can only be called from the server.")
-			payload.sent = sent
+			local payload = {outgoing = outgoing, id = id, sent = sent}
 
 			for _, player in Players:GetPlayers() do
 				table.insert(channel.users[player], payload)
@@ -54,7 +50,7 @@ function Packet.Event<O>(props: Types.EventProps<O>)
 
 		FireList = function(self, sent: any, players: {Player})
 			assert(RunContext == "Server", "FireList can only be called from the server.")
-			payload.sent = sent
+			local payload = {outgoing = outgoing, id = id, sent = sent}
 
 			for _, player in players do
 				table.insert(channel.users[player], payload)
@@ -75,11 +71,6 @@ function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 	local outgoing = props.outgoing
 	local incoming = props.incoming
 
-	local payload = {}
-	payload.outgoing = outgoing
-	payload.incoming = incoming
-	payload.id = id
-
 	local struct = {
 		_internal = {
 			callback = nil,
@@ -92,7 +83,7 @@ function Packet.Funct<O, I>(props: Types.FunctProps<O, I>)
 
 		Invoke = function(self, sent: any)
 			assert(RunContext == "Client", "Invoke can only be called from the client")
-			payload.sent = sent
+			local payload = {outgoing = outgoing, incoming = incoming, id = id, sent = sent}
 
 			table.insert(channel.users[Players.LocalPlayer], payload)
 			local thread = coroutine.running()

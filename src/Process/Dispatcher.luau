@@ -4,15 +4,13 @@ local u8 = require(script.Parent.Parent.DataTypes.u8)()
 local Types = require(script.Parent.Parent.Types)
 
 local RunContext = if RunService:IsServer() then "Server" else "Client"
-local cursor = {value = 0}
-local returned = table.create(256)
 
 return function(channel: Types.Channel, buf: buffer, player: Player?)
-	table.clear(returned)
-
-	cursor.value = 0
+	local cursor = {value = 0}
+	local returned = {}
+	
 	local len = buffer.len(buf)
-    local pamount = 0 
+	local pamount = 0 
 
 	while cursor.value < len do
         pamount += 1
@@ -24,26 +22,34 @@ return function(channel: Types.Channel, buf: buffer, player: Player?)
 		local id = u8.read(buf, cursor)
 
 		local packet = channel.packets[id]
-        if not packet then continue end
-
+		if not packet then continue end
+		
 		local identity = packet.Identifier
+		local internal = packet._internal
+		local outgoing = internal.outgoing
+		local incoming = internal.incoming
+		local callback = internal.callback
+		
+		local payload = {
+			id = id,
+			outgoing = incoming,
+		}
 
 		if identity == "Funct" then
-			local internal = packet._internal
-
-			local outgoing = internal.outgoing
-			local incoming = internal.incoming
-			local callback = internal.callback
-
+				
             local read
             if RunContext == "Server" then
                 if not callback then continue end
 
-                read = outgoing.read(buf, cursor)
-                table.insert(returned, {id = id, outgoing = incoming, sent = callback(read, player)})
+				read = outgoing.read(buf, cursor)
+				payload.sent = callback(read, player)
+				
+				table.insert(returned, payload)
             elseif RunContext == "Client" then
-                read = incoming.read(buf, cursor)
-                table.insert(returned, {id = id, outgoing = incoming, sent = read})
+				read = incoming.read(buf, cursor)
+				payload.sent = read
+		
+                table.insert(returned, payload)
 
                 local invokes = packet._internal.invokes
 
@@ -55,12 +61,10 @@ return function(channel: Types.Channel, buf: buffer, player: Player?)
             end
 
         elseif identity == "Event" then
-            local internal = packet._internal
-			local outgoing = internal.outgoing
-            local callback = internal.callback
+			local read = outgoing.read(buf, cursor)
 
             if callback then
-                callback(outgoing.read(buf, cursor), player)
+				callback(read, player)
             end
 		end
 	end
