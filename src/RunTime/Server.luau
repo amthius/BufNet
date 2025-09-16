@@ -57,7 +57,6 @@ function Server.build_channel(props: Types.ChannelProps, struct: Types.Channel)
         end
 	end)
 
-	
 	for _, player in Players:GetPlayers() do
 		users[player] = {}
 	end
@@ -74,19 +73,17 @@ end
 
 function Server.start()
 	local item
-	local sent
 
 	RunService.Heartbeat:Connect(function()
-        local current_players = Players:GetPlayers()
+		local users
+		
+		for i = 1, #ActiveChannels do
+			item = ActiveChannels[i]
+			users = item.users
 
-		for p = 1, #current_players do
-            local player = current_players[p]
-
-			for i = 1, #ActiveChannels do
-				item = ActiveChannels[i]
-				sent = item.users[player]
-
+			for player, sent in users do
 				if #sent ~= 0 then
+										
 					OIBridge.OI = item.instances
 
 					local buf = Constructor(sent)
@@ -94,8 +91,10 @@ function Server.start()
 
 					table.clear(sent)
 					table.clear(item.instances.outgoing)
+					
 				end
 			end
+
 		end
 	end)
 
@@ -112,6 +111,7 @@ function Server.start()
 			end
 		end
 	end)
+	
 end
 
 return Server
